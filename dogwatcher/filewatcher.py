@@ -1,113 +1,52 @@
-#using WatchDog Module
+#using watchdog module to check
+import watchdog.events
+import watchdog.observers
 import time
-import watchdog
-import watchdog.observers 
-import watchdog.events 
+from watchdog.events import FileSystemEventHandler
+import os
 
-#defining class to handle events
-class FileWatcherBinding(watchdog.events.FileSystemEventHandler):
-               #constructor
-               def __init__(self,times,flag):
-                 time.sleep(times)
-                 #sets the patterns for PatternMatchingEventHandler
-                 watchdog.events.PatternMatchingEventHandler.__init__(self, patterns=['*'],ignore_directories=flag, case_sensitive=False)
-                   
-                #checking for creating events
-               def on_created(self,event):
-                  #creating a log file
-                  f=open('watch_event.txt','a')
-                  f.write("Created event -%s."%event.src_path)
-                  f.close()
-                  print("event created")
+class FileWatcherBinding(watchdog.events.PatternMatchingEventHandler):
+    #initial function
+    def _init_(self,timee:int):
+        """
+        Default funciton to call watchdog module with correct parameters
 
-                #checking for modifing events
-               def on_modified(self,event):
-                #creating log file
-                  f=open("watch_event.txt",'a')
-                  f.write("modified event -%s."%event.src_path)
-                  f.close()
-                  print("modified event")
+        parameters being asked are  : timee : what is timee
 
-                #checking for deleting events
-               def on_deleted(self,event):
-                  f=open("watch_event.txt",'a')
-                  f.write("deleted event -%s."%event.src_path)
-                  f.close()
-                  print("Deleted event- %s."%event.src_path)
+        """
+        self.timee = timee
+        time.sleep(timee)
+        watchdog.events.PatternMatchingEventHandler._init_(self, patterns=['*'],ignore_directories=False, case_sensitive=False)
+   
+    def on_any_event(self, event):
+        #creating a log file
+        f=open('log.txt','a')
+        f.write("Watchdog received event happen- % s." % event.src_path+" . Event = "+event.event_type+"\n")
+        f.close()
+        print("Watchdog received event happen- % s." % event.src_path+" . Event = "+event.event_type+"\n")
 
-                #checking for any event
-               def on_any_event(self,event):
-                  f=open("lwatch_event.txt",'a')
-                  f.write("some event occured -%s."%event.src_path)
-                  f.close()
-                  print("som event occured")
-
-                #checking moving event
-               def on_moved(self,event):
-                  f=open("watch_event.txt",'a')
-                  f.write("moving event -%s."%event.src_path)
-                  f.close()
-                  print("moved event")
-
-                #checking closed event 
-               def on_closed(self,event):
-                f=open("watch_event.txt")
-                f.write("closed event -%s."%event.src_path)
-                f.close()
-                print("closed event")
-
-                #function for file event handling
-               def file_event_hadler(self,src_path):
-                  observer =watchdog.observers.Observer();
-                  observer.schedule(self,path=src_path,recursive=True)
-                  observer.start()
-
-                 #Exists on keyboard interrupt
-                  try:
-                    print("Monitoring")
-                    while True:
-                        pass
-                  except KeyboardInterrupt:
-                    print("exiting")
-                    observer.stop()
-                  observer.join()
-
-                  #function for Directory event Handling
-               def dir_event_handler(self,src_path):
-                  observer =watchdog.observers.Observer();
-                  observer.schedule(self,path=src_path,recursive=True)
-                  observer.start()
-
-                 #Exists on keyboard interrupt
-                  try:
-                    print("Monitoring")
-                    while True:
-                        pass
-                  except KeyboardInterrupt:
-                    print("exiting")
-                    observer.stop()
-                  observer.join()
-
-
-if __name__ == "__main__":
-    #choice to choose file or directory event handling
-    # 1 for File Event Handling
-    # 2 for Directory Event Handling 
-    c=int(input("1.File Event Handling\n2.Directory Event Handling"))
-    if c==1:
-        print("enter file path")
-    else:
-        print("enter directory path")
     
-    #getting path from user
-    src_path=input()
-
-    #making instance of class 
-    #for file event handling pass True else pass false
-    if c==1:
-        event_handler=FileWatcherBinding(5,True)
-        event_handler.file_event_hadler(src_path)
-    else:
-        event_handler=FileWatcherBinding(5,False)
-        event_handler.dir_event_handler(src_path)
-             
+    def file_event_hadler(self,path:str):
+        abs_path = os.path.abspath(path)
+        path_arr = abs_path.split('\\')
+        abs_path = abs_path.replace(path_arr[len(path_arr)-1], '')
+        self.start_watching(abs_path)
+    
+    def dir_event_handler(self,path:str):
+        abs_path = os.path.abspath(path)
+        self.start_watching(abs_path)
+    
+    def start_watching(self, dirname:str):
+        event_handler = FileWatcherBinding(self.timee)
+        FileSystemEventHandler.on_any_event = FileWatcherBinding.on_any_event
+        observer = watchdog.observers.Observer()
+        observer.schedule(event_handler, dirname, recursive=True)
+        observer.start()
+        print("Watching directory: " + dirname)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Terminated")
+            observer.stop()
+        observer.join()
