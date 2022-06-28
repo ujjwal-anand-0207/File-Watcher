@@ -1,5 +1,6 @@
 import unittest
-from filewatcher2 import FileWatcherBinding
+
+from filewatcher import FileWatcherBinding
 
 class Test(unittest.TestCase):
     def setup(self):
@@ -7,9 +8,7 @@ class Test(unittest.TestCase):
         
     
     def test_a_file_event_hadler(self):
-        """
-        
-        """
+     
         self.instance = FileWatcherBinding(1)
         self.instance.file_event_hadler('test/test.txt')
     
